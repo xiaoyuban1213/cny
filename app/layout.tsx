@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "春节倒计时(此标题会被替换,不用管)",
+  title: "春节倒计时 - 新年快乐",
   description: "春节倒计时",
 };
 
