@@ -27,7 +27,7 @@ const playlist = [
 export default function Home() {
   const nextLunarNewYear = getNextLunarNewYear();
   const isPC = useDeviceType();
-  const backgroundUrl = isPC ? 'https://api.mmeiblog.cn/pc' : 'https://api.mmeiblog.cn/phone';
+  const backgroundUrl = isPC ? 'https://api.mmeiblog.cn/pc?time=true' : 'https://api.mmeiblog.cn/phone?time=true';
   const year = nextLunarNewYear.getFullYear();
 
   useEffect(() => {
