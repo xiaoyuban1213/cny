@@ -4,19 +4,14 @@ import { Lunar, Solar } from 'lunar-javascript';
 export function getNextLunarNewYear(): Date {
   const now = new Date();
   let year = now.getFullYear();
-  let lunar = Lunar.fromDate(now);
+  let found = false;
 
   // 如果现在已经过了今年的春节，就计算下一年的
-  if (lunar.getMonth() !== 1 || lunar.getDay() !== 1) {
-    year++;
-  }
-
-  // 找到下一个春节的日期
-  while (true) {
-    for (let month = 1; month <= 2; month++) {
-      for (let day = 1; day <= 31; day++) {
+  while (!found) {
+    for (let month = 1; month <= 12; month++) {
+      for (let day = 1; day <= 30; day++) {
         const date = new Date(year, month - 1, day);
-        lunar = Lunar.fromDate(date); // 直接使用 Lunar.fromDate 进行转换
+        const lunar = Lunar.fromDate(date);
         if (lunar.getMonth() === 1 && lunar.getDay() === 1) {
           return date;
         }
@@ -24,4 +19,6 @@ export function getNextLunarNewYear(): Date {
     }
     year++; // 如果在当前年份没找到，继续查找下一年
   }
+
+  throw new Error('未能找到春节日期');
 }

@@ -9,6 +9,9 @@ declare module 'lunar-javascript' {
     }
   
     export class Solar {
+      static fromLunar(lunarNewYear: Lunar) {
+        throw new Error('Method not implemented.');
+      }
       static fromYmd(year: number, month: number, day: number): Solar;
     }
   }
