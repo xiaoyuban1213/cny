@@ -27,7 +27,3 @@ yarn add cny
 
 - 提交 Issues 或 Pull Requests。
 - 在 GitHub 上留言。
-
-## License
-
-[MIT License](LICENSE)
