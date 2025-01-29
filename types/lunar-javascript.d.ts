@@ -1,5 +1,6 @@
 declare module 'lunar-javascript' {
     export class Lunar {
+      static fromYmd: any;
       static fromSolar(solar: Solar): Lunar {
         throw new Error('Method not implemented.');
       }
