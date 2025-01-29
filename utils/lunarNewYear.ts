@@ -3,22 +3,22 @@ import { Lunar, Solar } from 'lunar-javascript';
 
 export function getNextLunarNewYear(): Date {
   const now = new Date();
+  // 将当前时间转换为当天的0点，以便只比较日期部分
+  const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   let year = now.getFullYear();
-  let found = false;
 
-  // 如果现在已经过了今年的春节，就计算下一年的
-  while (!found) {
-    for (let month = 1; month <= 12; month++) {
-      for (let day = 1; day <= 30; day++) {
-        const date = new Date(year, month - 1, day);
-        const lunar = Lunar.fromDate(date);
-        if (lunar.getMonth() === 1 && lunar.getDay() === 1) {
-          return date;
-        }
-      }
+  while (true) {
+    // 构造农历年的正月初一
+    const lunarNewYear = Lunar.fromYmd(year, 1, 1);
+    const solarDate = lunarNewYear.getSolar();
+    // 转换为公历日期对象（月份需要减1，因为JavaScript的Date月份从0开始）
+    const lunarNewYearDate = new Date(solarDate.getYear(), solarDate.getMonth() - 1, solarDate.getDay());
+
+    // 检查该日期是否大于当前日期的0点
+    if (lunarNewYearDate > nowDate) {
+      return lunarNewYearDate;
     }
-    year++; // 如果在当前年份没找到，继续查找下一年
+    // 继续检查下一年
+    year++;
   }
-
-  throw new Error('未能找到春节日期');
 }
