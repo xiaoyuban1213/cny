@@ -17,7 +17,7 @@ const playlist = [
 export default function Home() {
   const nextLunarNewYear = getNextLunarNewYear();
   const isPC = useDeviceType();
-  const backgroundUrl = isPC ? 'https://bing.img.run/rand_uhd.php' : 'https://bing.img.run/rand_uhd.php';
+  const backgroundUrl = isPC ? 'https://bing.img.run/rand_uhd.php' : 'https://bing.img.run/m.php';
   const year = nextLunarNewYear.getFullYear();
 
   useEffect(() => {
