@@ -8,9 +8,10 @@ import { SparklesIcon } from 'lucide-react';
 import { useEffect} from 'react';
 
 const playlist = [
+  { title: "恭喜发财", url: "https://www.yuban.cloud/music/恭喜发财.mp3" },
   { title: "好运来", url: "https://www.yuban.cloud/music/好运来.flac" },
   { title: "好日子", url: "https://www.yuban.cloud/music/好日子.flac" },
-  { title: "恭喜发财", url: "https://www.yuban.cloud/music/恭喜发财.mp3" },
+  { title: "相亲相爱", url: "https://www.yuban.cloud/music/相亲相爱.mp3" },
   { title: "触摸天空", url: "https://www.yuban.cloud/music/触摸天空.flac" },
 ];
 
