@@ -5,7 +5,7 @@ import { Countdown } from '../components/countdown';
 import { AudioPlayer } from '../components/AudioPlayer';
 import { useDeviceType } from '../hooks/useDeviceType';
 import { SparklesIcon } from 'lucide-react';
-import { useEffect} from 'react';
+import { useEffect, useState } from 'react';
 
 const playlist = [
   { title: "恭喜发财", url: "https://www.yuban.cloud/music/恭喜发财.mp3" },
@@ -18,8 +18,22 @@ const playlist = [
 export default function Home() {
   const nextLunarNewYear = getNextLunarNewYear();
   const isPC = useDeviceType();
-  const backgroundUrl = isPC ? 'https://bing.img.run/rand_uhd.php' : 'https://bing.img.run/rand_m.php';
   const year = nextLunarNewYear.getFullYear();
+  const [backgroundUrl, setBackgroundUrl] = useState(
+    () => `https://bing.img.run/rand_uhd.php?t=${Date.now()}`
+  );
+
+  useEffect(() => {
+    const baseUrl = isPC ? 'https://bing.img.run/rand_uhd.php' : 'https://bing.img.run/rand_m.php';
+    const updateBackground = () => {
+      setBackgroundUrl(`${baseUrl}?t=${Date.now()}`);
+    };
+
+    updateBackground();
+    const timer = setInterval(updateBackground, 5 * 60 * 1000);
+
+    return () => clearInterval(timer);
+  }, [isPC]);
 
   useEffect(() => {
     document.title = `${year}年春节倒计时 - 新年快乐`;
