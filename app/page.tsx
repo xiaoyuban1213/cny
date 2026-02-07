@@ -5,7 +5,7 @@ import { Countdown } from '../components/countdown';
 import { AudioPlayer } from '../components/AudioPlayer';
 import { useDeviceType } from '../hooks/useDeviceType';
 import { SparklesIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const playlist = [
   { title: "恭喜发财", url: "https://www.yuban.cloud/music/恭喜发财.mp3" },
@@ -15,25 +15,125 @@ const playlist = [
   { title: "触摸天空", url: "https://www.yuban.cloud/music/触摸天空.flac" },
 ];
 
+const BACKGROUND_SWITCH_INTERVAL_MS = 5 * 60 * 1000;
+const BACKGROUND_PRELOAD_LEAD_MS = 5 * 1000;
+const FALLBACK_BACKGROUND_URL = '/old/img/bj.jpg';
+
 export default function Home() {
   const nextLunarNewYear = getNextLunarNewYear();
   const isPC = useDeviceType();
   const year = nextLunarNewYear.getFullYear();
-  const [backgroundUrl, setBackgroundUrl] = useState(
-    () => `https://bing.img.run/rand_uhd.php?t=${Date.now()}`
-  );
+  const currentYear = new Date().getFullYear();
+  const [backgroundUrl, setBackgroundUrl] = useState(FALLBACK_BACKGROUND_URL);
+  const preloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nextBackgroundUrlRef = useRef<string | null>(null);
+  const pendingImageRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const baseUrl = isPC ? 'https://bing.img.run/rand_uhd.php' : 'https://bing.img.run/rand_m.php';
-    const updateBackground = () => {
-      setBackgroundUrl(`${baseUrl}?t=${Date.now()}`);
+    const preloadDelay = Math.max(0, BACKGROUND_SWITCH_INTERVAL_MS - BACKGROUND_PRELOAD_LEAD_MS);
+    let isCancelled = false;
+
+    const createSourceUrl = () => `${baseUrl}?_ts=${Date.now()}`;
+
+    const clearTimers = () => {
+      if (preloadTimerRef.current) {
+        clearTimeout(preloadTimerRef.current);
+        preloadTimerRef.current = null;
+      }
+      if (switchTimerRef.current) {
+        clearTimeout(switchTimerRef.current);
+        switchTimerRef.current = null;
+      }
     };
 
-    updateBackground();
-    const timer = setInterval(updateBackground, 5 * 60 * 1000);
+    const resetPendingImage = () => {
+      if (!pendingImageRef.current) {
+        return;
+      }
+      pendingImageRef.current.onload = null;
+      pendingImageRef.current.onerror = null;
+      pendingImageRef.current = null;
+    };
 
-    return () => clearInterval(timer);
+    const preloadNextImage = () => {
+      const sourceUrl = createSourceUrl();
+      resetPendingImage();
+      nextBackgroundUrlRef.current = null;
+
+      const img = new Image();
+      img.referrerPolicy = 'no-referrer';
+      img.onload = () => {
+        if (!isCancelled) {
+          nextBackgroundUrlRef.current = sourceUrl;
+        }
+      };
+      img.onerror = () => {
+        if (!isCancelled) {
+          nextBackgroundUrlRef.current = null;
+        }
+      };
+      img.src = sourceUrl;
+      pendingImageRef.current = img;
+    };
+
+    const scheduleCycle = () => {
+      preloadTimerRef.current = setTimeout(() => {
+        if (isCancelled) {
+          return;
+        }
+        preloadNextImage();
+      }, preloadDelay);
+
+      switchTimerRef.current = setTimeout(() => {
+        if (isCancelled) {
+          return;
+        }
+        const incomingUrl = nextBackgroundUrlRef.current;
+        setBackgroundUrl(incomingUrl ?? FALLBACK_BACKGROUND_URL);
+        nextBackgroundUrlRef.current = null;
+        resetPendingImage();
+        scheduleCycle();
+      }, BACKGROUND_SWITCH_INTERVAL_MS);
+    };
+
+    const initializeBackground = () => {
+      setBackgroundUrl(FALLBACK_BACKGROUND_URL);
+      preloadNextImage();
+      switchTimerRef.current = setTimeout(() => {
+        if (!isCancelled) {
+          setBackgroundUrl(nextBackgroundUrlRef.current ?? FALLBACK_BACKGROUND_URL);
+          nextBackgroundUrlRef.current = null;
+          resetPendingImage();
+          scheduleCycle();
+        }
+      }, 1000);
+    };
+
+    initializeBackground();
+
+    return () => {
+      isCancelled = true;
+      clearTimers();
+      resetPendingImage();
+      nextBackgroundUrlRef.current = null;
+    };
   }, [isPC]);
+
+  useEffect(() => {
+    if (!backgroundUrl || backgroundUrl === FALLBACK_BACKGROUND_URL) {
+      return;
+    }
+    const testImg = new Image();
+    testImg.src = backgroundUrl;
+    testImg.onerror = () => {
+      setBackgroundUrl(FALLBACK_BACKGROUND_URL);
+    };
+    return () => {
+      testImg.onerror = null;
+    };
+  }, [backgroundUrl]);
 
   useEffect(() => {
     document.title = `${year}年春节倒计时 - 新年快乐`;
@@ -77,9 +177,35 @@ export default function Home() {
           <path fillRule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clipRule="evenodd" />
         </svg>
       </div>
+      <div className="fixed bottom-4 right-4 z-20 w-96 max-w-[calc(100vw-2rem)] rounded-lg bg-white/10 p-4 text-right text-sm text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white/20">
+        <p>Copyright © 2018-{currentYear} Yuban-Network。</p>
+        <p>
+          感谢
+          <a
+            href="https://github.com/ssdomei232"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mx-1 text-cyan-300 underline-offset-2 hover:underline"
+          >
+            ssdomei232
+          </a>
+          提供的部分代码。
+        </p>
+        <p>
+          本站云计算服务由
+          <a
+            href="https://www.rainyun.com/YuBan_"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mx-1 text-cyan-300 underline-offset-2 hover:underline"
+          >
+            雨云
+          </a>
+          提供。
+        </p>
+      </div>
       {/* Audio Player */}
       <AudioPlayer playlist={playlist} />
     </div>
   );
 }
-
