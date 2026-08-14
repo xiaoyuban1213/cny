@@ -8,11 +8,11 @@ import { SparklesIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const playlist = [
-  { title: "恭喜发财", url: "https://www.yuban.cloud/music/恭喜发财.mp3" },
-  { title: "好运来", url: "https://www.yuban.cloud/music/好运来.flac" },
-  { title: "好日子", url: "https://www.yuban.cloud/music/好日子.flac" },
-  { title: "相亲相爱", url: "https://www.yuban.cloud/music/相亲相爱.mp3" },
-  { title: "触摸天空", url: "https://www.yuban.cloud/music/触摸天空.flac" },
+  { title: "恭喜发财", url: "https://api-yuban.cn-nb1.rains3.com/music/恭喜发财.mp3" },
+  { title: "好运来", url: "https://api-yuban.cn-nb1.rains3.com/music/好运来.mp3" },
+  { title: "好日子", url: "https://api-yuban.cn-nb1.rains3.com/music/好日子.mp3" },
+  { title: "相亲相爱", url: "https://api-yuban.cn-nb1.rains3.com/music/相亲相爱.mp3" },
+  { title: "触摸天空", url: "https://api-yuban.cn-nb1.rains3.com/music/触摸天空.mp3" },
 ];
 
 const BACKGROUND_SWITCH_INTERVAL_MS = 5 * 60 * 1000;
