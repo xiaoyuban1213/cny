@@ -37,3 +37,4 @@ next-env.d.ts
 
 # Lighthouse 导出报告
 cny.yuban.cloud-*.json
+lh-clean.json

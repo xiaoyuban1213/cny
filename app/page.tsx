@@ -18,12 +18,12 @@ const playlist = [
 const BACKGROUND_SWITCH_INTERVAL_MS = 5 * 60 * 1000;
 const BACKGROUND_PRELOAD_LEAD_MS = 15 * 1000; // 提前预加载，为多源冗余重试留出时间
 const BACKGROUND_SOURCE_TIMEOUT_MS = 10 * 1000; // 单个背景图源加载超时
-const FALLBACK_BACKGROUND_URL = '/old/img/bj.jpg';
+// 注：不再使用本地大图兜底（1.5MB），失败时保持深色 CSS 渐变，避免拖慢首屏
 
 /**
  * 背景图 API 源（仅自建 Bing 壁纸接口）。
  * 说明：接口返回 302 到壁纸图片，用 <img> 加载，无 CORS 限制。
- * 若接口不可用，加载失败后自动回退到本地图片 /old/img/bj.jpg。
+ * 若接口不可用，保持深色渐变背景（不再回退到本地大图，避免拖慢首屏）。
  */
 const PC_BACKGROUND_SOURCES: string[] = ['/api/bg'];
 const MOBILE_BACKGROUND_SOURCES: string[] = ['/api/bg'];
@@ -146,7 +146,7 @@ export default function Home() {
           return;
         }
         const incomingUrl = nextBackgroundUrlRef.current;
-        setBackgroundUrl(incomingUrl ?? FALLBACK_BACKGROUND_URL);
+        setBackgroundUrl(incomingUrl);
         nextBackgroundUrlRef.current = null;
         scheduleCycle();
       }, BACKGROUND_SWITCH_INTERVAL_MS);
@@ -159,7 +159,7 @@ export default function Home() {
       switchTimerRef.current = setTimeout(() => {
         if (!isCancelled) {
           const incomingUrl = nextBackgroundUrlRef.current;
-          setBackgroundUrl(incomingUrl ?? FALLBACK_BACKGROUND_URL);
+          setBackgroundUrl(incomingUrl);
           nextBackgroundUrlRef.current = null;
           scheduleCycle();
         }
@@ -177,7 +177,7 @@ export default function Home() {
 
   // 当前背景图加载失败时：尝试从其他源换一张；恢复失败则保持当前图，避免误回退本地图
   useEffect(() => {
-    if (!backgroundUrl || backgroundUrl === FALLBACK_BACKGROUND_URL) {
+    if (!backgroundUrl) {
       return;
     }
     let cancelled = false;
