@@ -95,7 +95,8 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
               <ChevronDown size={20} />
             </button>
           </div>
-          <audio ref={audioRef} src={playlist[currentSongIndex].url} />
+          {/* preload=none：不自动下载音乐，点击播放才加载 */}
+          <audio ref={audioRef} preload="none" />
           <div className="flex items-center justify-between space-x-4 mb-2">
             <button onClick={handlePrevious} aria-label="上一首" className="text-white hover:text-gray-300 transition-colors">
               <SkipBack size={24} />

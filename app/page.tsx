@@ -103,7 +103,7 @@ export default function Home() {
   const isPC = useDeviceType();
   const year = nextLunarNewYear.getFullYear();
   const currentYear = new Date().getFullYear();
-  const [backgroundUrl, setBackgroundUrl] = useState(FALLBACK_BACKGROUND_URL);
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
   const preloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextBackgroundUrlRef = useRef<string | null>(null);
@@ -153,7 +153,8 @@ export default function Home() {
     };
 
     const initializeBackground = () => {
-      setBackgroundUrl(FALLBACK_BACKGROUND_URL);
+      // 初始不加载大图（避免下载 1.5MB 兜底图拖慢首屏），用深色渐变兜底，预加载成功后切换
+      setBackgroundUrl(null);
       void preloadNextImage();
       switchTimerRef.current = setTimeout(() => {
         if (!isCancelled) {
@@ -205,11 +206,11 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Background Image */}
+      {/* Background Image（backgroundUrl 为空时显示深色渐变，不加载图片） */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-ken-burns"
+        className="absolute inset-0 bg-slate-900 bg-cover bg-center bg-no-repeat animate-ken-burns"
         style={{ 
-          backgroundImage: `url("${backgroundUrl}")`,
+          backgroundImage: backgroundUrl ? `url("${backgroundUrl}")` : undefined,
         }}
       />
       
