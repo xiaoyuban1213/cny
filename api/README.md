@@ -1,8 +1,8 @@
 # Bing 壁纸仓库 & API
 
 自建 Bing 每日壁纸方案：一次性从 Bing 官方 API 拉取历史壁纸，上传到自己的对象存储
-（S3 / 腾讯云 COS，5G 空间足够），再由 EdgeOne Pages Function 提供随机壁纸接口，
-彻底摆脱第三方免费 API 的不稳定。
+（S3 / 腾讯云 COS，5G 空间足够），再由网站自带的 Next.js Route Handler 提供随机壁纸
+接口，彻底摆脱第三方免费 API 的不稳定。
 
 > 为什么不放 GitHub 仓库/EO？壁纸文件大（几十张 × 几百 KB ~ 几 MB），会拖慢
 > 仓库克隆和每次 EO 部署；对象存储 + CDN 才是大文件该去的地方。
@@ -15,9 +15,7 @@ api/
 ├── wallpapers.json    # 壁纸清单（download.js 生成）
 └── wallpapers/        # 下载的壁纸图片（已 gitignore，上传对象存储用）
 
-functions/
-└── api/
-    └── bg.js          # EdgeOne Pages Function：GET /api/bg 随机壁纸
+app/api/bg/route.ts    # Next.js Route Handler：GET /api/bg 随机壁纸
 ```
 
 ## 使用步骤
@@ -58,7 +56,7 @@ aws s3 sync api/wallpapers/ s3://api-yuban/wallpapers/ --endpoint-url https://cn
 | 变量 | 值（示例） |
 |------|------|
 | `WALLPAPER_BASE_URL` | `https://api-yuban.cn-nb1.rains3.com/wallpapers`（壁纸所在文件夹，**含** `/wallpapers`） |
-| `WALLPAPER_NAMES` | 壁纸文件名（逗号分隔），不配置时用 `bg.js` 内嵌默认清单 |
+| `WALLPAPER_NAMES` | 壁纸文件名（逗号分隔），不配置时用 `app/api/bg/route.ts` 内嵌默认清单 |
 
 `WALLPAPER_NAMES` 可复制 `api/wallpapers.json` 中所有 `file` 字段。
 
@@ -77,5 +75,5 @@ GET /api/bg?list=1     # 壁纸清单
 - 数据源 Bing 官方 API：`https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN`
 - 多市场（`mkt`）可拿到不同壁纸，脚本按图片 URL 去重；单市场约回溯 7 天
 - 无需定时更新，以后想补充新图再跑一次脚本 + 增量上传即可
-- `functions/` 目录是 EdgeOne Pages Functions 的固定约定（兼容 Cloudflare Pages
-  Functions 格式），EO 从 GitHub 拉取部署时自动识别
+- API 用 Next.js Route Handler（`app/api/bg/route.ts`），路由为 `/api/bg`，
+  EO Pages 部署 Next.js 项目时自动处理，无需额外配置
