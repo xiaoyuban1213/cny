@@ -21,24 +21,12 @@ const BACKGROUND_SOURCE_TIMEOUT_MS = 10 * 1000; // 单个背景图源加载超�
 const FALLBACK_BACKGROUND_URL = '/old/img/bj.jpg';
 
 /**
- * 背景图 API 源（冗余列表，均为风景图）。
- * 说明：所有源均直接返回图片，用 <img> 加载，无 CORS 限制。
- * 每次获取会随机打乱顺序并依次尝试，直到某张成功为止。
- * 第一个为自建 Bing 壁纸接口（EO Pages Function），其余为备用第三方源。
+ * 背景图 API 源（仅自建 Bing 壁纸接口）。
+ * 说明：接口返回 302 到壁纸图片，用 <img> 加载，无 CORS 限制。
+ * 若接口不可用，加载失败后自动回退到本地图片 /old/img/bj.jpg。
  */
-const PC_BACKGROUND_SOURCES: string[] = [
-  '/api/bg',                                        // 自建 Bing 壁纸（EO Pages Function）
-  'https://api.dujin.org/bing/1920.php',            // 必应每日壁纸 1920x1080（风景为主）
-  'https://api.btstu.cn/sjbz/api.php?lx=fengjing',  // 随机风景壁纸
-  'https://t.mwm.moe/fj?w=1920&h=1080',             // 风景壁纸 1920x1080
-];
-
-const MOBILE_BACKGROUND_SOURCES: string[] = [
-  '/api/bg',                                        // 自建 Bing 壁纸（EO Pages Function）
-  'https://api.btstu.cn/sjbz/api.php?lx=fengjing',  // 随机风景壁纸
-  'https://t.mwm.moe/fj',                           // 风景壁纸
-  'https://api.dujin.org/bing/1920.php',            // 必应每日壁纸 1920x1080
-];
+const PC_BACKGROUND_SOURCES: string[] = ['/api/bg'];
+const MOBILE_BACKGROUND_SOURCES: string[] = ['/api/bg'];
 
 /** Fisher-Yates 洗牌（返回新数组，不修改原数组） */
 const shuffle = <T,>(arr: T[]): T[] => {
