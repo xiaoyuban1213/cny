@@ -89,21 +89,21 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
               <Volume2 size={20} className="text-white" />
-              <h3 className="text-white font-semibold truncate">{playlist[currentSongIndex].title}</h3>
+              <h2 className="text-white font-semibold truncate">{playlist[currentSongIndex].title}</h2>
             </div>
-            <button onClick={() => setIsExpanded(false)} className="text-white hover:text-gray-300 transition-colors">
+            <button onClick={() => setIsExpanded(false)} aria-label="收起播放器" className="text-white hover:text-gray-300 transition-colors">
               <ChevronDown size={20} />
             </button>
           </div>
           <audio ref={audioRef} src={playlist[currentSongIndex].url} />
           <div className="flex items-center justify-between space-x-4 mb-2">
-            <button onClick={handlePrevious} className="text-white hover:text-gray-300 transition-colors">
+            <button onClick={handlePrevious} aria-label="上一首" className="text-white hover:text-gray-300 transition-colors">
               <SkipBack size={24} />
             </button>
-            <button onClick={togglePlay} className="text-white hover:text-gray-300 transition-colors bg-white/20 rounded-full p-2">
+            <button onClick={togglePlay} aria-label={isPlaying ? "暂停" : "播放"} className="text-white hover:text-gray-300 transition-colors bg-white/20 rounded-full p-2">
               {isPlaying ? <Pause size={32} /> : <Play size={32} />}
             </button>
-            <button onClick={handleNext} className="text-white hover:text-gray-300 transition-colors">
+            <button onClick={handleNext} aria-label="下一首" className="text-white hover:text-gray-300 transition-colors">
               <SkipForward size={24} />
             </button>
           </div>
@@ -116,6 +116,7 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
             min={0}
             max={duration}
             value={currentTime}
+            aria-label="播放进度"
             onChange={(e) => {
               const audio = audioRef.current;
               if (audio) {
@@ -127,7 +128,7 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
           />
         </>
       ) : (
-        <button onClick={() => setIsExpanded(true)} className="w-full h-full flex items-center justify-center text-white hover:text-gray-300 transition-colors">
+        <button onClick={() => setIsExpanded(true)} aria-label="展开播放器" className="w-full h-full flex items-center justify-center text-white hover:text-gray-300 transition-colors">
           <ChevronUp size={20} />
         </button>
       )}
