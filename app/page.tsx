@@ -16,8 +16,99 @@ const playlist = [
 ];
 
 const BACKGROUND_SWITCH_INTERVAL_MS = 5 * 60 * 1000;
-const BACKGROUND_PRELOAD_LEAD_MS = 5 * 1000;
+const BACKGROUND_PRELOAD_LEAD_MS = 15 * 1000; // 提前预加载，为多源冗余重试留出时间
+const BACKGROUND_SOURCE_TIMEOUT_MS = 10 * 1000; // 单个背景图源加载超时
 const FALLBACK_BACKGROUND_URL = '/old/img/bj.jpg';
+
+/**
+ * 背景图 API 源（冗余列表，均为风景图）。
+ * 说明：所有源均直接返回图片，用 <img> 加载，无 CORS 限制。
+ * 每次获取会随机打乱顺序并依次尝试，直到某张成功为止。
+ * 第一个为自建 Bing 壁纸接口（EO Pages Function），其余为备用第三方源。
+ */
+const PC_BACKGROUND_SOURCES: string[] = [
+  '/api/bg',                                        // 自建 Bing 壁纸（EO Pages Function）
+  'https://api.dujin.org/bing/1920.php',            // 必应每日壁纸 1920x1080（风景为主）
+  'https://api.btstu.cn/sjbz/api.php?lx=fengjing',  // 随机风景壁纸
+  'https://t.mwm.moe/fj?w=1920&h=1080',             // 风景壁纸 1920x1080
+];
+
+const MOBILE_BACKGROUND_SOURCES: string[] = [
+  '/api/bg',                                        // 自建 Bing 壁纸（EO Pages Function）
+  'https://api.btstu.cn/sjbz/api.php?lx=fengjing',  // 随机风景壁纸
+  'https://t.mwm.moe/fj',                           // 风景壁纸
+  'https://api.dujin.org/bing/1920.php',            // 必应每日壁纸 1920x1080
+];
+
+/** Fisher-Yates 洗牌（返回新数组，不修改原数组） */
+const shuffle = <T,>(arr: T[]): T[] => {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
+
+/** 获取打乱顺序、带防缓存时间戳的背景图源 URL 列表 */
+const getBackgroundSourceUrls = (isPC: boolean): string[] => {
+  const sources = isPC ? PC_BACKGROUND_SOURCES : MOBILE_BACKGROUND_SOURCES;
+  return shuffle(sources).map((url) => `${url}?_ts=${Date.now()}`);
+};
+
+/**
+ * 依次尝试多个背景图源，返回第一个成功加载的 URL；
+ * 全部失败或超时时返回 null（由调用方回退到本地图片）。
+ */
+const loadBackgroundFromSources = (urls: string[]): Promise<string | null> =>
+  new Promise((resolve) => {
+    let index = 0;
+
+    const tryNext = () => {
+      if (index >= urls.length) {
+        resolve(null);
+        return;
+      }
+      const url = urls[index];
+      index += 1;
+
+      const img = new Image();
+      img.referrerPolicy = 'no-referrer';
+      let settled = false;
+
+      const timeoutId = setTimeout(() => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        img.onload = null;
+        img.onerror = null;
+        tryNext();
+      }, BACKGROUND_SOURCE_TIMEOUT_MS);
+
+      img.onload = () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeoutId);
+        resolve(url);
+      };
+
+      img.onerror = () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeoutId);
+        tryNext();
+      };
+
+      img.src = url;
+    };
+
+    tryNext();
+  });
 
 export default function Home() {
   const nextLunarNewYear = getNextLunarNewYear();
@@ -28,14 +119,10 @@ export default function Home() {
   const preloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextBackgroundUrlRef = useRef<string | null>(null);
-  const pendingImageRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    const baseUrl = isPC ? 'https://bing.img.run/rand_uhd.php' : 'https://bing.img.run/rand_m.php';
     const preloadDelay = Math.max(0, BACKGROUND_SWITCH_INTERVAL_MS - BACKGROUND_PRELOAD_LEAD_MS);
     let isCancelled = false;
-
-    const createSourceUrl = () => `${baseUrl}?_ts=${Date.now()}`;
 
     const clearTimers = () => {
       if (preloadTimerRef.current) {
@@ -48,42 +135,22 @@ export default function Home() {
       }
     };
 
-    const resetPendingImage = () => {
-      if (!pendingImageRef.current) {
+    // 预加载下一张背景图（多源冗余：依次尝试，成功即止）
+    const preloadNextImage = async () => {
+      if (isCancelled) {
         return;
       }
-      pendingImageRef.current.onload = null;
-      pendingImageRef.current.onerror = null;
-      pendingImageRef.current = null;
-    };
-
-    const preloadNextImage = () => {
-      const sourceUrl = createSourceUrl();
-      resetPendingImage();
-      nextBackgroundUrlRef.current = null;
-
-      const img = new Image();
-      img.referrerPolicy = 'no-referrer';
-      img.onload = () => {
-        if (!isCancelled) {
-          nextBackgroundUrlRef.current = sourceUrl;
-        }
-      };
-      img.onerror = () => {
-        if (!isCancelled) {
-          nextBackgroundUrlRef.current = null;
-        }
-      };
-      img.src = sourceUrl;
-      pendingImageRef.current = img;
+      const url = await loadBackgroundFromSources(getBackgroundSourceUrls(isPC));
+      if (!isCancelled) {
+        nextBackgroundUrlRef.current = url;
+      }
     };
 
     const scheduleCycle = () => {
       preloadTimerRef.current = setTimeout(() => {
-        if (isCancelled) {
-          return;
+        if (!isCancelled) {
+          void preloadNextImage();
         }
-        preloadNextImage();
       }, preloadDelay);
 
       switchTimerRef.current = setTimeout(() => {
@@ -93,19 +160,18 @@ export default function Home() {
         const incomingUrl = nextBackgroundUrlRef.current;
         setBackgroundUrl(incomingUrl ?? FALLBACK_BACKGROUND_URL);
         nextBackgroundUrlRef.current = null;
-        resetPendingImage();
         scheduleCycle();
       }, BACKGROUND_SWITCH_INTERVAL_MS);
     };
 
     const initializeBackground = () => {
       setBackgroundUrl(FALLBACK_BACKGROUND_URL);
-      preloadNextImage();
+      void preloadNextImage();
       switchTimerRef.current = setTimeout(() => {
         if (!isCancelled) {
-          setBackgroundUrl(nextBackgroundUrlRef.current ?? FALLBACK_BACKGROUND_URL);
+          const incomingUrl = nextBackgroundUrlRef.current;
+          setBackgroundUrl(incomingUrl ?? FALLBACK_BACKGROUND_URL);
           nextBackgroundUrlRef.current = null;
-          resetPendingImage();
           scheduleCycle();
         }
       }, 1000);
@@ -116,24 +182,34 @@ export default function Home() {
     return () => {
       isCancelled = true;
       clearTimers();
-      resetPendingImage();
       nextBackgroundUrlRef.current = null;
     };
   }, [isPC]);
 
+  // 当前背景图加载失败时：尝试从其他源换一张；恢复失败则保持当前图，避免误回退本地图
   useEffect(() => {
     if (!backgroundUrl || backgroundUrl === FALLBACK_BACKGROUND_URL) {
       return;
     }
+    let cancelled = false;
     const testImg = new Image();
-    testImg.src = backgroundUrl;
+    testImg.referrerPolicy = 'no-referrer';
     testImg.onerror = () => {
-      setBackgroundUrl(FALLBACK_BACKGROUND_URL);
+      if (cancelled) {
+        return;
+      }
+      void loadBackgroundFromSources(getBackgroundSourceUrls(isPC)).then((url) => {
+        if (!cancelled && url) {
+          setBackgroundUrl(url);
+        }
+      });
     };
+    testImg.src = backgroundUrl;
     return () => {
+      cancelled = true;
       testImg.onerror = null;
     };
-  }, [backgroundUrl]);
+  }, [backgroundUrl, isPC]);
 
   useEffect(() => {
     document.title = `${year}年春节倒计时 - 新年快乐`;

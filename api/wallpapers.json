@@ -1,0 +1,103 @@
+{
+  "updatedAt": "2026-08-14T20:34:34.970Z",
+  "source": "https://cn.bing.com/HPImageArchive.aspx",
+  "baseUrl": "https://<your-cos-cdn-domain>",
+  "wallpapers": [
+    {
+      "file": "20260814.jpg",
+      "title": "Aerial view of a wildlife crossing near Zakrzów, Poland (© bbsferrari/Getty Images)",
+      "date": "20260814",
+      "market": "en-US"
+    },
+    {
+      "file": "20260813.jpg",
+      "title": "Perseid meteors over Teide Observatory, Tenerife, Spain (© Westend61/Getty Images)",
+      "date": "20260813",
+      "market": "en-US"
+    },
+    {
+      "file": "20260812.jpg",
+      "title": "A group of elephants, Amboseli National Park, Kenya (© Ibrahim Suha Derbent/Getty Images)",
+      "date": "20260812",
+      "market": "en-US"
+    },
+    {
+      "file": "20260811.jpg",
+      "title": "Colorful homes line Nyhavn Canal, Copenhagen, Denmark (© emicristea/Getty Images)",
+      "date": "20260811",
+      "market": "en-US"
+    },
+    {
+      "file": "20260810.jpg",
+      "title": "Joshua Tree National Park, California (© JJ Landscapes/Getty Images)",
+      "date": "20260810",
+      "market": "en-US"
+    },
+    {
+      "file": "20260809.jpg",
+      "title": "Jean-Marie Tjibaou Cultural Centre, New Caledonia (© Fabien Astre/Alamy)",
+      "date": "20260809",
+      "market": "en-US"
+    },
+    {
+      "file": "20260808.jpg",
+      "title": "Infinity Bridge in Stockton-on-Tees, England (© Bahadir Yeniceri/Shutterstock)",
+      "date": "20260808",
+      "market": "en-US"
+    },
+    {
+      "file": "20260807.jpg",
+      "title": "Lime Kiln Lighthouse on San Juan Island, Washington State (© Edmund Lowe Photography/Shutterstock)",
+      "date": "20260807",
+      "market": "en-US"
+    },
+    {
+      "file": "20260814-2.jpg",
+      "title": "ア・シ・スレ・パ自然保護区, 米国 ニューメキシコ州 (© Westend61/Getty Images)",
+      "date": "20260814",
+      "market": "ja-JP"
+    },
+    {
+      "file": "20260813-2.jpg",
+      "title": "下田港, 静岡県 下田市 (© Sean Pavone/Getty Images)",
+      "date": "20260813",
+      "market": "ja-JP"
+    },
+    {
+      "file": "20260810-2.jpg",
+      "title": "日本アルプス (© Sergey Alimov/Getty Images)",
+      "date": "20260810",
+      "market": "ja-JP"
+    },
+    {
+      "file": "20260807-2.jpg",
+      "title": "Rhein in Flammen vor Schloss Stolzenfels bei Koblenz, Rheinland-Pfalz (© Jule_Berlin/Shutterstock)",
+      "date": "20260807",
+      "market": "de-DE"
+    },
+    {
+      "file": "20260813-3.jpg",
+      "title": "Dolmen, La Roche-Aux-Fées, Bretagne (© Michal Boubin/Getty Images)",
+      "date": "20260813",
+      "market": "fr-FR"
+    },
+    {
+      "file": "20260807-3.jpg",
+      "title": "Du linge qui sèche aux fenêtres d’une maison, Barjols, Var, Provence-Alpes-Côtes d'Azur (© mammuth/Getty Images)",
+      "date": "20260807",
+      "market": "fr-FR"
+    },
+    {
+      "file": "20260814-3.jpg",
+      "title": "Aerial view of Palmanova, a fortress city in Friuli, Italy (© Riccardo Saponi/Getty Images)",
+      "date": "20260814",
+      "market": "ko-KR"
+    },
+    {
+      "file": "20260810-3.jpg",
+      "title": "Whytecliff Park, West Vancouver, Canada (© Aolin Chen/Getty Images)",
+      "date": "20260810",
+      "market": "ko-KR"
+    }
+  ]
+}
