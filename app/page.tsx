@@ -7,14 +7,6 @@ import { useDeviceType } from '../hooks/useDeviceType';
 import { SparklesIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-const playlist = [
-  { title: "恭喜发财", url: "https://api-yuban.cn-nb1.rains3.com/music/恭喜发财.mp3" },
-  { title: "好运来", url: "https://api-yuban.cn-nb1.rains3.com/music/好运来.mp3" },
-  { title: "好日子", url: "https://api-yuban.cn-nb1.rains3.com/music/好日子.mp3" },
-  { title: "相亲相爱", url: "https://api-yuban.cn-nb1.rains3.com/music/相亲相爱.mp3" },
-  { title: "触摸天空", url: "https://api-yuban.cn-nb1.rains3.com/music/触摸天空.mp3" },
-];
-
 const BACKGROUND_SWITCH_INTERVAL_MS = 5 * 60 * 1000;
 const BACKGROUND_PRELOAD_LEAD_MS = 15 * 1000; // 提前预加载，为多源冗余重试留出时间
 const BACKGROUND_SOURCE_TIMEOUT_MS = 10 * 1000; // 单个背景图源加载超时
@@ -105,6 +97,7 @@ export default function Home() {
   const year = nextLunarNewYear.getFullYear();
   const currentYear = new Date().getFullYear();
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
+  const [musics, setMusics] = useState<{ title: string; url: string }[]>([]);
   const preloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextBackgroundUrlRef = useRef<string | null>(null);
@@ -205,6 +198,20 @@ export default function Home() {
     document.title = `${year}年春节倒计时 - 新年快乐`;
   }, [year]);
 
+  // 动态获取音乐列表（从 /api/music，清单在 S3 上可随时修改）
+  useEffect(() => {
+    fetch('/api/music')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && Array.isArray(data.musics) && data.musics.length > 0) {
+          setMusics(data.musics);
+        }
+      })
+      .catch(() => {
+        // 获取失败保持空，不渲染播放器
+      });
+  }, []);
+
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Background Image（backgroundUrl 为空时显示深色渐变，不加载图片） */}
@@ -270,8 +277,8 @@ export default function Home() {
           提供。
         </p>
       </div>
-      {/* Audio Player */}
-      <AudioPlayer playlist={playlist} />
+      {/* Audio Player（歌单动态加载，列表为空时不渲染） */}
+      {musics.length > 0 && <AudioPlayer playlist={musics} />}
     </div>
   );
 }
