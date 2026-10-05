@@ -3,13 +3,12 @@
 import { getNextLunarNewYear } from '../utils/lunarNewYear';
 import { Countdown } from '../components/countdown';
 import { AudioPlayer } from '../components/AudioPlayer';
-import { useDeviceType } from '../hooks/useDeviceType';
 import { SparklesIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const BACKGROUND_SWITCH_INTERVAL_MS = 5 * 60 * 1000;
-const BACKGROUND_PRELOAD_LEAD_MS = 15 * 1000; // 提前预加载，为多源冗余重试留出时间
 const BACKGROUND_SOURCE_TIMEOUT_MS = 10 * 1000; // 单个背景图源加载超时
+const BACKGROUND_RETRY_DELAYS_MS = [1000, 3000];
 // 本地兜底图（已压缩至 ~94KB，网络波动时兜底显示，不会拖慢首屏）
 const FALLBACK_BACKGROUND_URL = '/old/img/bj.jpg';
 
@@ -18,158 +17,121 @@ const FALLBACK_BACKGROUND_URL = '/old/img/bj.jpg';
  * 说明：接口返回 302 到壁纸图片，用 <img> 加载，无 CORS 限制。
  * 若接口不可用，回退到本地压缩兜底图（~94KB，不拖慢首屏）。
  */
-const PC_BACKGROUND_SOURCES: string[] = ['/api/bg'];
-const MOBILE_BACKGROUND_SOURCES: string[] = ['/api/bg'];
-
-/** Fisher-Yates 洗牌（返回新数组，不修改原数组） */
-const shuffle = <T,>(arr: T[]): T[] => {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-};
-
-/** 获取打乱顺序、带防缓存时间戳的背景图源 URL 列表 */
-const getBackgroundSourceUrls = (isPC: boolean): string[] => {
-  const sources = isPC ? PC_BACKGROUND_SOURCES : MOBILE_BACKGROUND_SOURCES;
-  return shuffle(sources).map((url) => `${url}?_ts=${Date.now()}`);
-};
-
-/**
- * 依次尝试多个背景图源，返回第一个成功加载的 URL；
- * 全部失败或超时时返回 null（由调用方回退到本地图片）。
- */
-const loadBackgroundFromSources = (urls: string[]): Promise<string | null> =>
-  new Promise((resolve) => {
-    let index = 0;
-
-    const tryNext = () => {
-      if (index >= urls.length) {
-        resolve(null);
-        return;
-      }
-      const url = urls[index];
-      index += 1;
-
-      const img = new Image();
-      img.referrerPolicy = 'no-referrer';
-      let settled = false;
-
-      const timeoutId = setTimeout(() => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        img.onload = null;
-        img.onerror = null;
-        tryNext();
-      }, BACKGROUND_SOURCE_TIMEOUT_MS);
-
-      img.onload = () => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        clearTimeout(timeoutId);
-        resolve(url);
-      };
-
-      img.onerror = () => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        clearTimeout(timeoutId);
-        tryNext();
-      };
-
-      img.src = url;
-    };
-
-    tryNext();
+const getRandomBackgroundUrl = async (): Promise<string | null> => {
+  const cacheBust = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const response = await fetch(`/api/bg?json=1&_ts=${cacheBust}`, {
+    cache: 'no-store',
+    signal: AbortSignal.timeout(BACKGROUND_SOURCE_TIMEOUT_MS),
   });
+  if (!response.ok) {
+    return null;
+  }
+
+  const data: { url?: unknown } = await response.json();
+  if (typeof data.url !== 'string' || !data.url) {
+    return null;
+  }
+
+  const imageUrl = new URL(data.url, window.location.origin).toString();
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.referrerPolicy = 'no-referrer';
+    let settled = false;
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      image.onload = null;
+      image.onerror = null;
+      image.src = 'data:,';
+      resolve(null);
+    }, BACKGROUND_SOURCE_TIMEOUT_MS);
+
+    image.onload = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      resolve(imageUrl);
+    };
+    image.onerror = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      resolve(null);
+    };
+    image.src = imageUrl;
+  });
+};
+
+const loadBackgroundWithRetry = async (
+  shouldCancel: () => boolean
+): Promise<string | null> => {
+  for (let attempt = 0; attempt <= BACKGROUND_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (shouldCancel()) {
+      return null;
+    }
+    let url: string | null = null;
+    try {
+      url = await getRandomBackgroundUrl();
+    } catch {
+      url = null;
+    }
+    if (url || shouldCancel()) {
+      return url;
+    }
+    const retryDelay = BACKGROUND_RETRY_DELAYS_MS[attempt];
+    if (retryDelay !== undefined) {
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    }
+  }
+  return null;
+};
 
 export default function Home() {
-  const nextLunarNewYear = getNextLunarNewYear();
-  const isPC = useDeviceType();
+  const [nextLunarNewYear, setNextLunarNewYear] = useState(() => getNextLunarNewYear());
   const year = nextLunarNewYear.getFullYear();
   const currentYear = new Date().getFullYear();
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
   const [musics, setMusics] = useState<{ title: string; url: string }[]>([]);
-  const preloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const nextBackgroundUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const preloadDelay = Math.max(0, BACKGROUND_SWITCH_INTERVAL_MS - BACKGROUND_PRELOAD_LEAD_MS);
+    const refreshTarget = () => setNextLunarNewYear(getNextLunarNewYear());
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refreshTarget();
+      }
+    };
+
+    refreshTarget();
+    const timer = setInterval(refreshTarget, 60 * 60 * 1000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, []);
+
+  useEffect(() => {
     let isCancelled = false;
 
-    const clearTimers = () => {
-      if (preloadTimerRef.current) {
-        clearTimeout(preloadTimerRef.current);
-        preloadTimerRef.current = null;
-      }
-      if (switchTimerRef.current) {
-        clearTimeout(switchTimerRef.current);
-        switchTimerRef.current = null;
+    const loadBackground = async () => {
+      const url = await loadBackgroundWithRetry(() => isCancelled);
+      if (!isCancelled && url) {
+        setBackgroundUrl(url);
       }
     };
 
-    // 预加载下一张背景图（多源冗余：依次尝试，成功即止）
-    const preloadNextImage = async () => {
-      if (isCancelled) {
-        return;
-      }
-      const url = await loadBackgroundFromSources(getBackgroundSourceUrls(isPC));
-      if (!isCancelled) {
-        nextBackgroundUrlRef.current = url;
-      }
-    };
-
-    const scheduleCycle = () => {
-      preloadTimerRef.current = setTimeout(() => {
-        if (!isCancelled) {
-          void preloadNextImage();
-        }
-      }, preloadDelay);
-
-      switchTimerRef.current = setTimeout(() => {
-        if (isCancelled) {
-          return;
-        }
-        const incomingUrl = nextBackgroundUrlRef.current;
-        setBackgroundUrl(incomingUrl ?? FALLBACK_BACKGROUND_URL);
-        nextBackgroundUrlRef.current = null;
-        scheduleCycle();
-      }, BACKGROUND_SWITCH_INTERVAL_MS);
-    };
-
-    const initializeBackground = () => {
-      // 初始不加载大图（避免下载 1.5MB 兜底图拖慢首屏），用深色渐变兜底，预加载成功后切换
-      setBackgroundUrl(null);
-      void preloadNextImage();
-      switchTimerRef.current = setTimeout(() => {
-        if (!isCancelled) {
-          const incomingUrl = nextBackgroundUrlRef.current;
-          setBackgroundUrl(incomingUrl ?? FALLBACK_BACKGROUND_URL);
-          nextBackgroundUrlRef.current = null;
-          scheduleCycle();
-        }
-      }, 1000);
-    };
-
-    initializeBackground();
+    setBackgroundUrl(FALLBACK_BACKGROUND_URL);
+    void loadBackground();
+    const timer = setInterval(() => void loadBackground(), BACKGROUND_SWITCH_INTERVAL_MS);
 
     return () => {
       isCancelled = true;
-      clearTimers();
-      nextBackgroundUrlRef.current = null;
+      clearInterval(timer);
     };
-  }, [isPC]);
+  }, []);
 
-  // 当前背景图加载失败时：尝试从其他源换一张；恢复失败则保持当前图，避免误回退本地图
+  // 当前远程背景加载失败时，重新请求随机壁纸；失败后使用本地兜底图
   useEffect(() => {
     if (!backgroundUrl || backgroundUrl === FALLBACK_BACKGROUND_URL) {
       return;
@@ -181,9 +143,9 @@ export default function Home() {
       if (cancelled) {
         return;
       }
-      void loadBackgroundFromSources(getBackgroundSourceUrls(isPC)).then((url) => {
-        if (!cancelled && url) {
-          setBackgroundUrl(url);
+      void loadBackgroundWithRetry(() => cancelled).then((url) => {
+        if (!cancelled) {
+          setBackgroundUrl(url ?? FALLBACK_BACKGROUND_URL);
         }
       });
     };
@@ -192,7 +154,7 @@ export default function Home() {
       cancelled = true;
       testImg.onerror = null;
     };
-  }, [backgroundUrl, isPC]);
+  }, [backgroundUrl]);
 
   useEffect(() => {
     document.title = `${year}年春节倒计时 - 新年快乐`;
@@ -214,7 +176,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Background Image（backgroundUrl 为空时显示深色渐变，不加载图片） */}
+      {/* Background Image（远程背景尚未加载时显示本地兜底图） */}
       <div 
         className="absolute inset-0 bg-slate-900 bg-cover bg-center bg-no-repeat animate-ken-burns"
         style={{ 

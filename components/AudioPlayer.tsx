@@ -34,29 +34,24 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
     const setAudioData = () => {
       setDuration(audio.duration);
       setCurrentTime(audio.currentTime);
-    }
+    };
   
     const setAudioTime = () => setCurrentTime(audio.currentTime);
   
-    audio.addEventListener('loadeddata', setAudioData);
+    audio.addEventListener('loadedmetadata', setAudioData);
     audio.addEventListener('timeupdate', setAudioTime);
     audio.addEventListener('ended', handleNext);
   
     return () => {
-      audio.removeEventListener('loadeddata', setAudioData);
+      audio.removeEventListener('loadedmetadata', setAudioData);
       audio.removeEventListener('timeupdate', setAudioTime);
       audio.removeEventListener('ended', handleNext);
-    }
-  }, [handleNext]); // 添加 handleNext 到依赖项
+    };
+  }, [handleNext]);
 
   const togglePlay = () => {
-    if (audioRef.current?.paused) {
-      audioRef.current.play();
-    } else {
-      audioRef.current?.pause();
-    }
-    setIsPlaying(!isPlaying);
-  }
+    setIsPlaying((playing) => !playing);
+  };
 
   const handlePrevious = useCallback(() => {
     setCurrentSongIndex((prevIndex) => 
@@ -66,15 +61,29 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
   }, [playlist.length]);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.src = playlist[currentSongIndex].url;
-      if (isPlaying) {
-        audioRef.current.play();
-      } else {
-        audioRef.current.pause();
-      }
+    const audio = audioRef.current;
+    if (!audio || !playlist[currentSongIndex]) {
+      return;
     }
-  }, [currentSongIndex, playlist, isPlaying]); // 添加 isPlaying 到依赖项
+
+    audio.src = playlist[currentSongIndex].url;
+    audio.load();
+    setCurrentTime(0);
+    setDuration(0);
+  }, [currentSongIndex, playlist]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    if (isPlaying) {
+      void audio.play().catch(() => setIsPlaying(false));
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying, currentSongIndex]);
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
@@ -84,6 +93,8 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
 
   return (
     <div className={`fixed bottom-4 left-4 z-20 bg-white/10 backdrop-blur-md rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 ${isExpanded ? 'w-72 p-4' : 'w-12 h-12'}`}>
+      {/* Keep the media element mounted while the controls are collapsed. */}
+      <audio ref={audioRef} preload="none" className="hidden" />
       {isExpanded ? (
         <>
           <div className="flex items-center justify-between mb-2">
@@ -95,8 +106,6 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
               <ChevronDown size={20} />
             </button>
           </div>
-          {/* preload=none：不自动下载音乐，点击播放才加载 */}
-          <audio ref={audioRef} preload="none" />
           <div className="flex items-center justify-between space-x-4 mb-2">
             <button onClick={handlePrevious} aria-label="上一首" className="text-white hover:text-gray-300 transition-colors">
               <SkipBack size={24} />
