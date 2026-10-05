@@ -18,9 +18,12 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [isExpanded, setIsExpanded] = useState(true);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
+  // 用户是否已经开始播放：未播放前不指定音源，避免首屏白下载整首歌曲
+  const [hasStartedPlayback, setHasStartedPlayback] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const handleNext = useCallback(() => {
+    setHasStartedPlayback(true);
     setCurrentSongIndex((prevIndex) => 
       prevIndex === playlist.length - 1 ? 0 : prevIndex + 1
     );
@@ -50,10 +53,12 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
   }, [handleNext]);
 
   const togglePlay = () => {
+    setHasStartedPlayback(true);
     setIsPlaying((playing) => !playing);
   };
 
   const handlePrevious = useCallback(() => {
+    setHasStartedPlayback(true);
     setCurrentSongIndex((prevIndex) => 
       prevIndex === 0 ? playlist.length - 1 : prevIndex - 1
     );
@@ -62,19 +67,18 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !playlist[currentSongIndex]) {
+    if (!audio || !hasStartedPlayback || !playlist[currentSongIndex]) {
       return;
     }
 
     audio.src = playlist[currentSongIndex].url;
-    audio.load();
     setCurrentTime(0);
     setDuration(0);
-  }, [currentSongIndex, playlist]);
+  }, [hasStartedPlayback, currentSongIndex, playlist]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) {
+    if (!audio || !hasStartedPlayback) {
       return;
     }
 
@@ -83,7 +87,7 @@ export function AudioPlayer({ playlist }: AudioPlayerProps) {
     } else {
       audio.pause();
     }
-  }, [isPlaying, currentSongIndex]);
+  }, [isPlaying, hasStartedPlayback, currentSongIndex]);
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);

@@ -7,90 +7,21 @@ import { SparklesIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const BACKGROUND_SWITCH_INTERVAL_MS = 5 * 60 * 1000;
-const BACKGROUND_SOURCE_TIMEOUT_MS = 10 * 1000; // 单个背景图源加载超时
-const BACKGROUND_RETRY_DELAYS_MS = [1000, 3000];
-// 本地兜底图（已压缩至 ~94KB，网络波动时兜底显示，不会拖慢首屏）
+// 本地兜底图（已压缩至 ~94KB）：作为背景的第二层，远程壁纸失败时仍有图可看
 const FALLBACK_BACKGROUND_URL = '/old/img/bj.jpg';
 
 /**
- * 背景图 API 源（仅自建 Bing 壁纸接口）。
- * 说明：接口返回 302 到壁纸图片，用 <img> 加载，无 CORS 限制。
- * 若接口不可用，回退到本地压缩兜底图（~94KB，不拖慢首屏）。
+ * 生成一张随机壁纸的地址，直接交给 CSS 加载。
+ * 接口 /api/bg 会 302 跳到具体图片，省掉一次接口往返，让壁纸尽早开始下载。
  */
-const getRandomBackgroundUrl = async (): Promise<string | null> => {
-  const cacheBust = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const response = await fetch(`/api/bg?json=1&_ts=${cacheBust}`, {
-    cache: 'no-store',
-    signal: AbortSignal.timeout(BACKGROUND_SOURCE_TIMEOUT_MS),
-  });
-  if (!response.ok) {
-    return null;
-  }
-
-  const data: { url?: unknown } = await response.json();
-  if (typeof data.url !== 'string' || !data.url) {
-    return null;
-  }
-
-  const imageUrl = new URL(data.url, window.location.origin).toString();
-  return new Promise((resolve) => {
-    const image = new Image();
-    image.referrerPolicy = 'no-referrer';
-    let settled = false;
-    const timeoutId = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      image.onload = null;
-      image.onerror = null;
-      image.src = 'data:,';
-      resolve(null);
-    }, BACKGROUND_SOURCE_TIMEOUT_MS);
-
-    image.onload = () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutId);
-      resolve(imageUrl);
-    };
-    image.onerror = () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutId);
-      resolve(null);
-    };
-    image.src = imageUrl;
-  });
-};
-
-const loadBackgroundWithRetry = async (
-  shouldCancel: () => boolean
-): Promise<string | null> => {
-  for (let attempt = 0; attempt <= BACKGROUND_RETRY_DELAYS_MS.length; attempt += 1) {
-    if (shouldCancel()) {
-      return null;
-    }
-    let url: string | null = null;
-    try {
-      url = await getRandomBackgroundUrl();
-    } catch {
-      url = null;
-    }
-    if (url || shouldCancel()) {
-      return url;
-    }
-    const retryDelay = BACKGROUND_RETRY_DELAYS_MS[attempt];
-    if (retryDelay !== undefined) {
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
-    }
-  }
-  return null;
-};
+const createWallpaperUrl = () =>
+  `/api/bg?_ts=${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 export default function Home() {
   const [nextLunarNewYear, setNextLunarNewYear] = useState(() => getNextLunarNewYear());
   const year = nextLunarNewYear.getFullYear();
   const currentYear = new Date().getFullYear();
-  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
+  const [wallpaperUrl, setWallpaperUrl] = useState<string | null>(null);
   const [musics, setMusics] = useState<{ title: string; url: string }[]>([]);
 
   useEffect(() => {
@@ -111,50 +42,15 @@ export default function Home() {
     };
   }, []);
 
+  // 壁纸：挂载后立刻交给浏览器加载，之后每 5 分钟换一张
   useEffect(() => {
-    let isCancelled = false;
+    setWallpaperUrl(createWallpaperUrl());
+    const timer = setInterval(() => {
+      setWallpaperUrl(createWallpaperUrl());
+    }, BACKGROUND_SWITCH_INTERVAL_MS);
 
-    const loadBackground = async () => {
-      const url = await loadBackgroundWithRetry(() => isCancelled);
-      if (!isCancelled && url) {
-        setBackgroundUrl(url);
-      }
-    };
-
-    setBackgroundUrl(FALLBACK_BACKGROUND_URL);
-    void loadBackground();
-    const timer = setInterval(() => void loadBackground(), BACKGROUND_SWITCH_INTERVAL_MS);
-
-    return () => {
-      isCancelled = true;
-      clearInterval(timer);
-    };
+    return () => clearInterval(timer);
   }, []);
-
-  // 当前远程背景加载失败时，重新请求随机壁纸；失败后使用本地兜底图
-  useEffect(() => {
-    if (!backgroundUrl || backgroundUrl === FALLBACK_BACKGROUND_URL) {
-      return;
-    }
-    let cancelled = false;
-    const testImg = new Image();
-    testImg.referrerPolicy = 'no-referrer';
-    testImg.onerror = () => {
-      if (cancelled) {
-        return;
-      }
-      void loadBackgroundWithRetry(() => cancelled).then((url) => {
-        if (!cancelled) {
-          setBackgroundUrl(url ?? FALLBACK_BACKGROUND_URL);
-        }
-      });
-    };
-    testImg.src = backgroundUrl;
-    return () => {
-      cancelled = true;
-      testImg.onerror = null;
-    };
-  }, [backgroundUrl]);
 
   useEffect(() => {
     document.title = `${year}年春节倒计时 - 新年快乐`;
@@ -176,14 +72,16 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Background Image（远程背景尚未加载时显示本地兜底图） */}
-      <div 
+      {/* Background Image：第一层是远程壁纸，第二层是本地兜底图（远程失败时仍有图） */}
+      <div
         className="absolute inset-0 bg-slate-900 bg-cover bg-center bg-no-repeat animate-ken-burns"
-        style={{ 
-          backgroundImage: backgroundUrl ? `url("${backgroundUrl}")` : undefined,
+        style={{
+          backgroundImage: wallpaperUrl
+            ? `url("${wallpaperUrl}"), url("${FALLBACK_BACKGROUND_URL}")`
+            : `url("${FALLBACK_BACKGROUND_URL}")`,
         }}
       />
-      
+
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/50 backdrop-blur-sm" />
 
@@ -212,6 +110,8 @@ export default function Home() {
           <path fillRule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clipRule="evenodd" />
         </svg>
       </div>
+
+      {/* Footer */}
       <div className="fixed bottom-4 right-4 z-20 w-96 max-w-[calc(100vw-2rem)] rounded-lg bg-white/10 p-4 text-right text-sm text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white/20">
         <p>Copyright © 2018-{currentYear} Yuban-Network。</p>
         <p>
@@ -239,6 +139,7 @@ export default function Home() {
           提供。
         </p>
       </div>
+
       {/* Audio Player（歌单动态加载，列表为空时不渲染） */}
       {musics.length > 0 && <AudioPlayer playlist={musics} />}
     </div>
