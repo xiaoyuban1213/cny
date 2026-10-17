@@ -9,9 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
     "lucide-react": "^0.468.0",
     "lunar-javascript": "^1.6.13",
     "next": "14.2.16",
