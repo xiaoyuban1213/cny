@@ -8,8 +8,8 @@ interface CountdownProps {
 }
 
 // 计算剩余时间（服务端渲染时同步执行，首屏 HTML 直接显示真实值，改善 LCP）
-function getTimeLeft(targetDate: Date) {
-  const totalSeconds = Math.max(0, Math.floor((targetDate.getTime() - Date.now()) / 1000));
+function getTimeLeft(targetTime: number) {
+  const totalSeconds = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
   return {
     days: Math.floor(totalSeconds / 86400),
     hours: Math.floor(totalSeconds / 3600) % 24,
@@ -19,18 +19,19 @@ function getTimeLeft(targetDate: Date) {
 }
 
 export function Countdown({ targetDate }: CountdownProps) {
-  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(targetDate));
+  const targetTime = targetDate.getTime();
+  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(targetTime));
   const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
-    setTimeLeft(getTimeLeft(targetDate));
+    setTimeLeft(getTimeLeft(targetTime));
     setHasHydrated(true);
     const timer = setInterval(() => {
-      setTimeLeft(getTimeLeft(targetDate));
+      setTimeLeft(getTimeLeft(targetTime));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [targetDate.getTime()]);
+  }, [targetTime]);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl w-full px-4">

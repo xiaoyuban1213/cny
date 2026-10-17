@@ -1,5 +1,11 @@
 # 更新日志
 
+## 2026-10-18
+
+- 清理死代码与未使用依赖：删除 `hooks/useDeviceType.ts`（无引用）、`tailwind.config.ts`（与 `tailwind.config.js` 重复，实际生效的是后者）；移除 `date-fns`、`class-variance-authority`（源码零引用）。
+- 修复倒计时的 Hook 依赖写法，消除 ESLint 警告（抽取时间戳变量，避免在依赖数组里调用方法）。
+- 排查背景图加载异常：对象存储开启了防盗链（域名白名单 + 允许空 Referer），生产域名 `cny.yuban.cloud` 在白名单内，线上加载正常；本地 `localhost` 不在白名单会返回 403，浏览器报 `ERR_BLOCKED_BY_ORB`。按既定方案保留防盗链配置，本地开发直接使用本地兜底图，不做全局 `no-referrer` 降级。
+
 ## 2026-10-05
 
 - 重构春节倒计时：剩余时间先统一计算为总秒数，再拆分天、时、分、秒，避免各字段独立取整造成边界不一致。
