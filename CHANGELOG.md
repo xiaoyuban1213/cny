@@ -1,5 +1,11 @@
 # 更新日志
 
+## 2026-10-22
+
+- 升级 Next.js 14.2.16 → **14.2.35**（14.x 最新补丁），`eslint-config-next` 同步升级；本地环境已切到 Node v24。
+- 验证：`npm install` 未改动依赖解析结果，ESLint 0 警告、`tsc --noEmit` 通过、清缓存重建成功，`/`、`/api/bg`、`/api/bg?json=1`、`/api/bg?list=1`、`/api/music`、404 路由响应均正常；线上音乐播放与壁纸加载正常。
+- 说明：`npm audit` 仍将 `next` 标为 critical（相关公告覆盖 <15.5.24 / <15.5.21）。本项目未使用 `next/image`、Server Actions、middleware/rewrites，且部署于 EO 边缘（非 Windows），不在实际影响范围内；彻底消除需跨大版本升级到 15.5.24+ 或 16.x。
+
 ## 2026-10-18
 
 - 清理死代码与未使用依赖：删除 `hooks/useDeviceType.ts`（无引用）、`tailwind.config.ts`（与 `tailwind.config.js` 重复，实际生效的是后者）；移除 `date-fns`、`class-variance-authority`（源码零引用）。
