@@ -5,6 +5,7 @@
 - 升级 Next.js 14.2.16 → **14.2.35**（14.x 最新补丁），`eslint-config-next` 同步升级；本地环境已切到 Node v24。
 - 验证：`npm install` 未改动依赖解析结果，ESLint 0 警告、`tsc --noEmit` 通过、清缓存重建成功，`/`、`/api/bg`、`/api/bg?json=1`、`/api/bg?list=1`、`/api/music`、404 路由响应均正常；线上音乐播放与壁纸加载正常。
 - 说明：`npm audit` 仍将 `next` 标为 critical（相关公告覆盖 <15.5.24 / <15.5.21）。本项目未使用 `next/image`、Server Actions、middleware/rewrites，且部署于 EO 边缘（非 Windows），不在实际影响范围内；彻底消除需跨大版本升级到 15.5.24+ 或 16.x。
+- 移除废弃的 `.github/workflows/nextjs.yml`：该工作流在 push 到 `vue` 时会触发，但它使用 `static_site_generator: next` 注入 `output: 'export'`，与 `/api/bg`、`/api/music` 的 `force-dynamic` 冲突而必然构建失败，且产物路径 `./out` 并不存在。站点由 EO 直接从仓库拉取构建部署，与该工作流无关。
 
 ## 2026-10-18
 
