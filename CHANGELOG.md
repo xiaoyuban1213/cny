@@ -2,6 +2,11 @@
 
 ## 2026-11-06
 
+### 页脚新增构建信息
+
+- 右下角页脚卡片增加一行浅色小字：`build <commit> · <构建时间>`，commit 可点击跳转到 GitHub 对应提交，便于确认线上跑的是哪个版本。
+- 实现：`next.config.mjs` 在构建时读取 `NEXT_PUBLIC_BUILD_COMMIT` → `GITHUB_SHA` → `git rev-parse --short HEAD`（依次兜底），并通过 `env` 注入；构建时间在构建时按 UTC 格式化，避免服务端/客户端时区不同造成 hydration 不一致。
+
 ### 修复音乐列表回退成 5 首
 
 - 关闭对象存储的「允许空 Referer」后，服务端拉取 `music/manifest.json` 因不带 Referer 被 403（`Your referer host is not allowed`），`/api/music` 静默回退到内置默认列表（旧默认只有 5 首）。

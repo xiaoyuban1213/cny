@@ -10,6 +10,10 @@ const BACKGROUND_SWITCH_INTERVAL_MS = 5 * 60 * 1000;
 // 本地兜底图（已压缩至 ~94KB）：作为背景的第二层，远程壁纸失败时仍有图可看
 const FALLBACK_BACKGROUND_URL = '/old/img/bj.jpg';
 
+// 构建信息（由 next.config 在构建时注入并内联）
+const buildCommit = process.env.NEXT_PUBLIC_BUILD_COMMIT || 'unknown';
+const buildTime = process.env.NEXT_PUBLIC_BUILD_TIME || '';
+
 /**
  * 生成一张随机壁纸的地址，直接交给 CSS 加载。
  * 接口 /api/bg 会 302 跳到具体图片，省掉一次接口往返，让壁纸尽早开始下载。
@@ -137,6 +141,20 @@ export default function Home() {
             雨云
           </a>
           提供。
+        </p>
+        {/* 构建信息：便于确认线上部署的具体版本 */}
+        <p className="mt-1 border-t border-white/10 pt-1 text-[11px] text-white/45">
+          build{' '}
+          <a
+            href={`https://github.com/xiaoyuban1213/cny/commit/${buildCommit}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-white/60 underline-offset-2 hover:text-white/80 hover:underline"
+          >
+            {buildCommit}
+          </a>
+          <span className="mx-1">·</span>
+          {buildTime}
         </p>
       </div>
 
