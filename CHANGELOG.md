@@ -2,6 +2,12 @@
 
 ## 2026-11-06
 
+### 修复音乐列表回退成 5 首
+
+- 关闭对象存储的「允许空 Referer」后，服务端拉取 `music/manifest.json` 因不带 Referer 被 403（`Your referer host is not allowed`），`/api/music` 静默回退到内置默认列表（旧默认只有 5 首）。
+- 修复：`app/api/music/route.ts` 的 manifest 请求显式携带 `Referer`（取自 `SITE_ORIGIN` 环境变量，默认 `https://cny.yuban.cloud`）；同时把内置兜底列表补全为 8 首。
+- 说明：壁纸 `/api/bg` 不受影响——它只返回图片 URL，由浏览器加载，浏览器会自动带 Referer。
+
 ### 倒计时卡片动效修复
 
 - 修复卡片缩放动画被压成 0.3s 的问题：`tailwindcss-animate` 的 `duration-300` 除 `transition-duration` 外还会输出 `animation-duration: .3s`，且位置在 `.animate-scale` 之后，把原本 2s 的呼吸动画覆盖成 0.3s 高频抖动。改用 `transition-colors [transition-duration:300ms]` 只影响悬停过渡，缩放恢复 2s。

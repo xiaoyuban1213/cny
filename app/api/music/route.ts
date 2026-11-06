@@ -8,9 +8,20 @@ const DEFAULT_MUSICS = [
   { title: '恭喜发财', file: '恭喜发财.mp3' },
   { title: '好运来', file: '好运来.mp3' },
   { title: '好日子', file: '好日子.mp3' },
+  { title: '春节序曲', file: '春节序曲.mp3' },
+  { title: '发财发福中国年', file: '发财发福中国年.mp3' },
+  { title: '财神到', file: '财神到.mp3' },
   { title: '相亲相爱', file: '相亲相爱.mp3' },
   { title: '触摸天空', file: '触摸天空.mp3' },
 ];
+
+/**
+ * 站点域名，用于构造对象存储防盗链所需的 Referer。
+ * 对象存储开启了域名白名单防盗链且不允许空 Referer，
+ * 服务端 fetch 默认不带 Referer 会被 403，必须显式补上。
+ */
+const SITE_ORIGIN =
+  (process.env.SITE_ORIGIN || '').replace(/\/+$/, '') || 'https://cny.yuban.cloud';
 
 /**
  * 计算音乐目录基础 URL：
@@ -35,7 +46,12 @@ export async function GET() {
   try {
     const res = await fetch(`${base}/manifest.json`, {
       signal: AbortSignal.timeout(6000),
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        // 防盗链按 Referer 白名单放行，服务端请求必须显式携带
+        Referer: `${SITE_ORIGIN}/`,
+      },
+      cache: 'no-store',
     });
     if (res.ok) {
       const data = await res.json();
