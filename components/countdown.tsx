@@ -35,11 +35,20 @@ export function Countdown({ targetDate }: CountdownProps) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl w-full px-4">
-      {Object.entries(timeLeft).map(([unit, value], index) => (
-        <Card key={unit} className="overflow-hidden backdrop-blur-md bg-white/10 border-white/20 animate-scale hover:bg-white/20 transition-all duration-300">
+      {Object.entries(timeLeft).map(([unit, value]) => (
+        <Card
+          key={unit}
+          className="overflow-hidden backdrop-blur-md bg-white/10 border-white/20 animate-scale hover:bg-white/20 transition-colors [transition-duration:300ms]"
+        >
           <CardContent className="flex flex-col items-center justify-center p-6">
-            <span key={hasHydrated ? `${unit}-client` : unit} suppressHydrationWarning className={`text-4xl md:text-5xl font-bold text-white mb-2 animate-pulse ${index % 2 === 0 ? 'animate-float' : 'animate-float-reverse'}`}>
-              {value.toString().padStart(2, '0')}
+            <span className="animate-pulse">
+              <span
+                key={hasHydrated ? `${unit}-client` : unit}
+                suppressHydrationWarning
+                className="block text-4xl md:text-5xl font-bold text-white mb-2"
+              >
+                {value.toString().padStart(2, '0')}
+              </span>
             </span>
             <span className="text-sm text-white/80 capitalize">
               {unit}

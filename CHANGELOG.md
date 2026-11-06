@@ -2,6 +2,14 @@
 
 ## 2026-11-06
 
+### 倒计时卡片动效修复
+
+- 修复卡片缩放动画被压成 0.3s 的问题：`tailwindcss-animate` 的 `duration-300` 除 `transition-duration` 外还会输出 `animation-duration: .3s`，且位置在 `.animate-scale` 之后，把原本 2s 的呼吸动画覆盖成 0.3s 高频抖动。改用 `transition-colors [transition-duration:300ms]` 只影响悬停过渡，缩放恢复 2s。
+- 移除卡片数字的浮动动画（`:nth-child` 交替 `animate-float` / `animate-float-reverse`）。其中 `animate-float-reverse` 从未在 tailwind 配置中定义，属无效类；且 `pulse` 与 `float` 共用 `animation` 属性互相冲突，实际只有 `pulse` 生效。现在数字只保留 `pulse` 透明度呼吸。
+- 标题年份与左上角装饰图标仍保留 `animate-float` 浮动效果。
+
+### 对象存储迁移
+
 - 对象存储更换新版本，访问域名统一为 **`https://api.yuban.cloud`**（原 `https://api-yuban.cn-nb1.rains3.com`）。
 - 同步更新：`app/layout.tsx` 的 `preconnect` / `dns-prefetch`、`api/README.md` 文档、`api/download.js` 与 `api/wallpapers.json` 的 `baseUrl`。
 - 目录结构不变（`/wallpapers/`、`/music/`），仅域名替换；需在 EO 环境变量把 `WALLPAPER_BASE_URL` 改为 `https://api.yuban.cloud/wallpapers`。
