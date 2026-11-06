@@ -40,7 +40,7 @@ node api/download.js --days 3     # 只拉最近 3 天
 
 ```bash
 # 使用 s3cmd 或 aws cli，示例（S3 兼容）：
-aws s3 sync api/wallpapers/ s3://api-yuban/wallpapers/ --endpoint-url https://api.yuban.cloud
+aws s3 sync api/wallpapers/ s3://apiyuban/wallpapers/ --endpoint-url https://api.yuban.cloud
 ```
 
 > ⚠️ **访问控制要求**
