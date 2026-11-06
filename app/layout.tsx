@@ -27,8 +27,8 @@ export default function RootLayout({
     <html lang="zh-Hans">
       <head>
         {/* 提前与对象存储建立连接，缩短壁纸与音乐的加载时间 */}
-        <link rel="preconnect" href="https://api-yuban.cn-nb1.rains3.com" />
-        <link rel="dns-prefetch" href="https://api-yuban.cn-nb1.rains3.com" />
+        <link rel="preconnect" href="https://api.yuban.cloud" />
+        <link rel="dns-prefetch" href="https://api.yuban.cloud" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

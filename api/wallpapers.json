@@ -1,7 +1,7 @@
 {
   "updatedAt": "2026-08-14T20:34:34.970Z",
   "source": "https://cn.bing.com/HPImageArchive.aspx",
-  "baseUrl": "https://<your-cos-cdn-domain>",
+  "baseUrl": "https://api.yuban.cloud",
   "wallpapers": [
     {
       "file": "20260814.jpg",

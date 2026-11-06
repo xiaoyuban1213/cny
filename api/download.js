@@ -158,7 +158,7 @@ async function main() {
   const manifest = {
     updatedAt: new Date().toISOString(),
     source: 'https://global.bing.com/HPImageArchive.aspx',
-    baseUrl: 'https://<your-cos-cdn-domain>', // TODO: 改为对象存储 CDN 域名（可选）
+    baseUrl: 'https://api.yuban.cloud', // 对象存储访问域名（对应 EO 的 WALLPAPER_BASE_URL + /wallpapers）
     wallpapers,
   };
   fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2), 'utf-8');

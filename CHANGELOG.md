@@ -1,5 +1,13 @@
 # 更新日志
 
+## 2026-11-06
+
+- 对象存储更换新版本，访问域名统一为 **`https://api.yuban.cloud`**（原 `https://api-yuban.cn-nb1.rains3.com`）。
+- 同步更新：`app/layout.tsx` 的 `preconnect` / `dns-prefetch`、`api/README.md` 文档、`api/download.js` 与 `api/wallpapers.json` 的 `baseUrl`。
+- 目录结构不变（`/wallpapers/`、`/music/`），仅域名替换；需在 EO 环境变量把 `WALLPAPER_BASE_URL` 改为 `https://api.yuban.cloud/wallpapers`。
+- 实测新域名：壁纸、`music/manifest.json`、音乐文件均返回 200，本地壁纸加载 5/5 成功、音乐可播放。
+- ⚠️ 注意：**新域名未启用防盗链**（带外站 Referer 也返回 200），而旧域名启用且白名单仅 `cny.yuban.cloud`。好处是本地开发不再被 403 拦截；若仍需防盗链，需在新域名上重新配置白名单。
+
 ## 2026-10-22
 
 - 升级 Next.js 14.2.16 → **14.2.35**（14.x 最新补丁），`eslint-config-next` 同步升级；本地环境已切到 Node v24。

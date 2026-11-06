@@ -40,14 +40,14 @@ node api/download.js --days 3     # 只拉最近 3 天
 
 ```bash
 # 使用 s3cmd 或 aws cli，示例（S3 兼容）：
-aws s3 sync api/wallpapers/ s3://api-yuban/wallpapers/ --endpoint-url https://cn-nb1.rains3.com
+aws s3 sync api/wallpapers/ s3://api-yuban/wallpapers/ --endpoint-url https://api.yuban.cloud
 ```
 
-> ⚠️ **必须开启公共读！**
-> 壁纸会被网页 <img> 直接加载，桶必须是**公共读**（允许匿名 GetObject）。
-> 当前桶 `api-yuban` 未开公共访问，直接访问会返回 **403**，背景图无法显示。
-> 请在雨云控制台 → 存储桶 → 权限管理中，为桶（或至少 `wallpapers/` 前缀）添加
-> 公共读策略（匿名读取），例如设置 Bucket Policy 允许 `s3:GetObject` 对 `*` 开放。
+> ⚠️ **访问控制要求**
+> 1. 壁纸会被网页直接加载，桶需允许匿名读取（公共读）。
+> 2. 桶已启用**防盗链（域名白名单）**，白名单必须包含站点域名 `cny.yuban.cloud`，
+>    否则图片会被 403 拦截（浏览器报 `ERR_BLOCKED_BY_ORB`，表现为主图不显示、仅剩本地兜底图）。
+>    本地 `localhost` 不在白名单时同样会被拦，属预期行为。
 
 ### 3. 配置 EdgeOne Pages 环境变量
 
@@ -55,8 +55,9 @@ aws s3 sync api/wallpapers/ s3://api-yuban/wallpapers/ --endpoint-url https://cn
 
 | 变量 | 值（示例） |
 |------|------|
-| `WALLPAPER_BASE_URL` | `https://api-yuban.cn-nb1.rains3.com/wallpapers`（壁纸所在文件夹，**含** `/wallpapers`） |
+| `WALLPAPER_BASE_URL` | `https://api.yuban.cloud/wallpapers`（壁纸所在文件夹，**含** `/wallpapers`） |
 | `WALLPAPER_NAMES` | 壁纸文件名（逗号分隔），不配置时用 `app/api/bg/route.ts` 内嵌默认清单 |
+| `MUSIC_BASE_URL` | `https://api.yuban.cloud/music`（可选；不配置时由 `WALLPAPER_BASE_URL` 自动推导） |
 
 `WALLPAPER_NAMES` 可复制 `api/wallpapers.json` 中所有 `file` 字段。
 
